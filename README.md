@@ -24,7 +24,11 @@ The project deliberately sits beside existing standards and platforms. It consum
 | Pass / review / block verdicts | Implemented |
 | Claim inspector and local report UI | Implemented |
 | JSON and Markdown report export | Implemented |
-| OTel adapter, DSSE cryptographic verification, CLI, GitHub Action | Roadmap |
+| Claim-level differential verification | Implemented |
+| Signature state model (unsigned/declared/verified/invalid/unknown-key) | Implemented |
+| Passive CLI verification and SARIF output | Implemented |
+| Ed25519 envelope helpers with explicit trust roots | Implemented |
+| OTel adapter and reusable GitHub Action | Roadmap |
 
 ## Run locally
 
@@ -70,6 +74,8 @@ client/src/lib/proofmesh/
 ├── types.ts       # domain vocabulary
 ├── canonical.ts   # stable serialization and SHA-256
 ├── verify.ts      # parser, graph checks, rules, report orchestration
+├── signature.ts   # Ed25519 envelope helpers and trust-state semantics
+├── diff.ts        # deterministic claim-level differential reports
 ├── fixtures.ts    # valid and intentionally incomplete examples
 └── verify.test.ts # deterministic domain tests
 ```
@@ -78,13 +84,13 @@ See [`docs/product-spec.md`](docs/product-spec.md) for product boundaries and [`
 
 ## Security posture
 
-ProofMesh is intentionally passive in the MVP. It does not execute commands, invoke models, fetch network resources, load plugins, or infer cryptographic trust from a string label. A future DSSE adapter must accept explicit trust roots and expose verification state separately from the bundle's claims.
+ProofMesh is intentionally passive. It does not execute commands, invoke models, fetch network resources, load plugins, or infer cryptographic trust from a string label. The signature helpers accept explicit trust roots and expose verification state separately from bundle claims; a declared envelope is never treated as verified automatically.
 
 Do not upload secrets, production prompts, customer data, or private evidence to a public issue. See [`SECURITY.md`](SECURITY.md) for reporting guidance.
 
 ## Roadmap
 
-The next version will add an OTel GenAI adapter, DSSE/in-toto envelope parsing, a standalone CLI, and a GitHub Action that emits a machine-readable report. Later versions may add conformance fixture packs, differential verification, MCP evidence adapters, and sandbox-aware replay harnesses. A hosted multi-tenant dashboard is intentionally not the next step; portability and independent verification are the product boundary.
+The next version will add an OTel GenAI adapter, conformance fixture packs, MCP evidence adapters, and a reusable GitHub Action. Differential verification and the passive CLI are already available in v0.3. A hosted multi-tenant dashboard is intentionally not the next step; portability and independent verification are the product boundary.
 
 ## Contributing
 
@@ -110,4 +116,4 @@ pnpm proofmesh verify examples/passing-bundle.json \
   --format sarif --output proofmesh.sarif
 ```
 
-The process exits with `0` for a passing report, `1` when review findings exist, and `2` for blocked or invalid bundles. This makes the verifier usable as a required CI check without conflating an auditable review with a hard failure.
+The process exits with `0` for a passing report, `1` when review findings exist, and `2` for blocked or invalid bundles. To compare two runs without executing either one, use `pnpm proofmesh diff before.json after.json`; it emits a stable claim-level report and returns `1` when differences exist. This makes the verifier usable as a required CI check without conflating an auditable review with a hard failure.

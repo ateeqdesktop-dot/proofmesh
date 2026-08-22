@@ -45,6 +45,17 @@ export interface Claim {
   metadata?: Record<string, string | number | boolean>;
 }
 
+export type SignatureStatus = "unsigned" | "declared" | "verified" | "invalid" | "unknown-key";
+
+export interface SignatureEnvelope {
+  type: "dsse" | "in-toto";
+  scheme: "ed25519";
+  keyId?: string;
+  publicKey?: string;
+  signature: string;
+  payloadDigest: string;
+}
+
 export interface EvidenceBundle {
   id: string;
   schemaVersion: string;
@@ -61,6 +72,7 @@ export interface EvidenceBundle {
     type: "dsse" | "in-toto" | "unsigned";
     verified: boolean;
     signer?: string;
+    signature?: SignatureEnvelope;
   };
 }
 
@@ -82,6 +94,18 @@ export interface GraphSummary {
   disconnected: string[];
 }
 
+export interface DiffChange {
+  path: string;
+  kind: "added" | "removed" | "changed";
+  before?: string;
+  after?: string;
+}
+
+export interface DiffReport {
+  equivalent: boolean;
+  changes: DiffChange[];
+}
+
 export interface VerificationReport {
   bundleId: string;
   bundleDigest: string;
@@ -97,6 +121,7 @@ export interface VerificationReport {
     nonReplayable: number;
   };
   graph: GraphSummary;
+  signatureStatus?: SignatureStatus;
   findings: Finding[];
 }
 

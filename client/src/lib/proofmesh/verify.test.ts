@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { canonicalJson, shortDigest } from "./canonical";
+import { diffBundles } from "./diff";
 import { fixtureBundles } from "./fixtures";
 import { verifyBundle } from "./verify";
 
@@ -27,6 +28,20 @@ describe("ProofMesh verifier", () => {
     expect(report.verdict).toBe("block");
     expect(report.graph.missingRefs).toContain("missing-policy");
     expect(report.findings.some((finding) => finding.ruleId === "completeness.required-kind")).toBe(true);
+  });
+
+  it("reports declared signatures separately from verified trust", async () => {
+    const { report } = await verifyBundle({ ...fixtureBundles.passing, envelope: { type: "dsse", verified: false, signature: { type: "dsse", scheme: "ed25519", signature: "bad", payloadDigest: "bad" } } });
+    expect(report.signatureStatus).toBe("declared");
+    expect(report.findings.some((finding) => finding.ruleId === "envelope.unverified")).toBe(true);
+  });
+
+  it("produces a deterministic claim-level diff", () => {
+    const before = fixtureBundles.passing;
+    const after = { ...before, claims: before.claims.map((claim) => claim.id === "output-01" ? { ...claim, label: "changed output" } : claim) };
+    const report = diffBundles(before, after);
+    expect(report.equivalent).toBe(false);
+    expect(report.changes).toEqual(expect.arrayContaining([expect.objectContaining({ path: "claims.output-01", kind: "changed" })]));
   });
 
   it("never treats malformed input as verified", async () => {

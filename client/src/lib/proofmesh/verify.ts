@@ -3,6 +3,7 @@
  * hashes, and evaluates claims; it never fetches URLs or executes tool data.
  */
 import { sha256 } from "./canonical";
+import { declaredSignatureStatus } from "./signature";
 import type {
   Claim,
   EvidenceBundle,
@@ -172,7 +173,7 @@ function evaluateRules(bundle: EvidenceBundle, findings: Finding[]): void {
       ruleId: "envelope.unverified",
       severity: "review",
       title: "Envelope is not cryptographically verified",
-      detail: "The bundle declares an envelope, but this browser MVP has not verified its signature.",
+      detail: "The bundle declares an envelope, but this verifier has not verified its signature against an explicit trust root.",
       path: "envelope.verified",
     });
   }
@@ -200,6 +201,7 @@ export async function verifyBundle(input: unknown): Promise<VerificationResult> 
 
   const findings: Finding[] = [];
   const graph = buildGraph(bundle, findings);
+  const signatureStatus = declaredSignatureStatus(bundle);
   evaluateRules(bundle, findings);
   const digest = await sha256(bundle);
   const counts = {
@@ -223,6 +225,7 @@ export async function verifyBundle(input: unknown): Promise<VerificationResult> 
       nonReplayable: replay.filter((mode) => mode === "non-replayable").length,
     },
     graph,
+    signatureStatus,
     findings,
   };
   return { bundle, report };
