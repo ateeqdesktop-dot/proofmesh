@@ -1,0 +1,36 @@
+name: ProofMesh Verify
+description: Passively verify an AI execution evidence bundle and optionally emit SARIF.
+author: ProofMesh contributors
+inputs:
+  bundle:
+    description: Path to the evidence bundle JSON file.
+    required: true
+  format:
+    description: Output format, either json or sarif.
+    required: false
+    default: sarif
+  output:
+    description: Optional report path. SARIF is uploaded by the caller when desired.
+    required: false
+    default: proofmesh.sarif
+runs:
+  using: composite
+  steps:
+    - name: Install ProofMesh dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
+    - name: Verify evidence bundle
+      shell: bash
+      run: |
+        set +e
+        pnpm proofmesh verify "${{ inputs.bundle }}" --format "${{ inputs.format }}" --output "${{ inputs.output }}"
+        code=$?
+        set -e
+        if [ "$code" -eq 2 ]; then
+          echo "ProofMesh blocked or could not parse the bundle" >&2
+          exit "$code"
+        fi
+        if [ "${{ inputs.format }}" = "sarif" ] && [ -f "${{ inputs.output }}" ]; then
+          echo "ProofMesh wrote SARIF report to ${{ inputs.output }}"
+        fi
+        exit "$code"

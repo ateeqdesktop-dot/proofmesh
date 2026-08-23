@@ -14,21 +14,22 @@ The project deliberately sits beside existing standards and platforms. It consum
 
 ## What is implemented
 
-| Capability | MVP status |
-|---|---|
-| Versioned evidence bundle model | Implemented |
-| Deterministic canonical JSON and SHA-256 digest | Implemented in browser |
-| Claim graph and missing-reference detection | Implemented |
-| Evidence completeness rules | Implemented |
-| Replayability classification | Implemented conservatively |
-| Pass / review / block verdicts | Implemented |
-| Claim inspector and local report UI | Implemented |
-| JSON and Markdown report export | Implemented |
-| Claim-level differential verification | Implemented |
-| Signature state model (unsigned/declared/verified/invalid/unknown-key) | Implemented |
-| Passive CLI verification and SARIF output | Implemented |
-| Ed25519 envelope helpers with explicit trust roots | Implemented |
-| OTel adapter and reusable GitHub Action | Roadmap |
+| Capability                                                             | MVP status                 |
+| ---------------------------------------------------------------------- | -------------------------- |
+| Versioned evidence bundle model                                        | Implemented                |
+| Deterministic canonical JSON and SHA-256 digest                        | Implemented in browser     |
+| Claim graph and missing-reference detection                            | Implemented                |
+| Evidence completeness rules                                            | Implemented                |
+| Replayability classification                                           | Implemented conservatively |
+| Pass / review / block verdicts                                         | Implemented                |
+| Claim inspector and local report UI                                    | Implemented                |
+| JSON and Markdown report export                                        | Implemented                |
+| Claim-level differential verification                                  | Implemented                |
+| Signature state model (unsigned/declared/verified/invalid/unknown-key) | Implemented                |
+| Passive CLI verification and SARIF output                              | Implemented                |
+| Ed25519 envelope helpers with explicit trust roots                     | Implemented                |
+| OTel adapter                                                           | Roadmap                    |
+| Reusable GitHub Action                                                 | Implemented                |
 
 ## Run locally
 
@@ -90,7 +91,7 @@ Do not upload secrets, production prompts, customer data, or private evidence to
 
 ## Roadmap
 
-The next version will add an OTel GenAI adapter, conformance fixture packs, MCP evidence adapters, and a reusable GitHub Action. Differential verification and the passive CLI are already available in v0.3. A hosted multi-tenant dashboard is intentionally not the next step; portability and independent verification are the product boundary.
+The next version will add an OTel GenAI adapter, conformance fixture packs, and MCP evidence adapters. Differential verification, the passive CLI, and the reusable GitHub Action are available in v0.4. A hosted multi-tenant dashboard is intentionally not the next step; portability and independent verification are the product boundary.
 
 ## Contributing
 
@@ -99,6 +100,28 @@ Contributions are welcome when they preserve the protocol-first boundary. New ru
 ## License
 
 MIT. See [`LICENSE`](LICENSE).
+
+## Reusable GitHub Action
+
+ProofMesh can also run as a composite GitHub Action after the caller checks out the repository and installs pnpm:
+
+```yaml
+- uses: actions/checkout@v4
+- uses: pnpm/action-setup@v4
+  with:
+    version: 10
+- uses: ateeqdesktop-dot/proofmesh@v0.4.0
+  with:
+    bundle: examples/passing-bundle.json
+    format: sarif
+    output: proofmesh.sarif
+- uses: github/codeql-action/upload-sarif@v3
+  if: always()
+  with:
+    sarif_file: proofmesh.sarif
+```
+
+The action preserves the same exit semantics as the CLI: a pass exits successfully, review findings remain visible as a non-zero review result, and blocked or malformed evidence exits with code `2`. It never executes commands from the bundle or fetches referenced URLs.
 
 ## CLI verification
 

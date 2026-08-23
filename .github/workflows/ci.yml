@@ -42,6 +42,12 @@ jobs:
       - name: Production build
         run: pnpm build
 
+      - name: Action contract
+        run: pnpm action:check
+
+      - name: Formatting check
+        run: pnpm exec prettier --check action.yml package.json README.md docs/architecture.md
+
       - name: CLI verification and SARIF export
         shell: bash
         run: |
