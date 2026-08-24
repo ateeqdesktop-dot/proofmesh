@@ -1,0 +1,72 @@
+name: ProofMesh verify
+description: Verify an AI execution evidence bundle and optionally publish SARIF findings.
+inputs:
+  project-dir:
+    description: Directory containing the ProofMesh package.json and CLI, relative to the caller workspace.
+    required: false
+    default: .
+  bundle:
+    description: Path to the evidence bundle JSON relative to the caller workspace.
+    required: true
+  sarif-file:
+    description: Output path for the SARIF report relative to the caller workspace.
+    required: false
+    default: proofmesh.sarif
+  upload-sarif:
+    description: Upload the SARIF report to GitHub code scanning. Requires security-events write.
+    required: false
+    default: 'false'
+  fail-on-review:
+    description: Fail the step for review findings as well as blocked findings.
+    required: false
+    default: 'true'
+outputs:
+  sarif-file:
+    description: Path to the generated SARIF report.
+    value: ${{ inputs.sarif-file }}
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+
+    - name: Install ProofMesh
+      shell: bash
+      env:
+        PROOFMESH_PROJECT: ${{ inputs.project-dir }}
+      run: pnpm --dir "$GITHUB_WORKSPACE/$PROOFMESH_PROJECT" install --frozen-lockfile
+
+    - name: Verify bundle and emit SARIF
+      id: verify
+      shell: bash
+      env:
+        PROOFMESH_PROJECT: ${{ inputs.project-dir }}
+        PROOFMESH_BUNDLE: ${{ inputs.bundle }}
+        PROOFMESH_SARIF: ${{ inputs.sarif-file }}
+        PROOFMESH_FAIL_ON_REVIEW: ${{ inputs.fail-on-review }}
+      run: |
+        set +e
+        pnpm --dir "$GITHUB_WORKSPACE/$PROOFMESH_PROJECT" --silent proofmesh verify "$GITHUB_WORKSPACE/$PROOFMESH_BUNDLE" \
+          --format sarif --output "$GITHUB_WORKSPACE/$PROOFMESH_SARIF"
+        code=$?
+        set -e
+        echo "$code" > "$RUNNER_TEMP/proofmesh-exit-code"
+        if [ "$code" -eq 2 ]; then
+          echo "ProofMesh blocked the bundle."
+          exit 1
+        fi
+        if [ "$code" -eq 1 ] && [ "$PROOFMESH_FAIL_ON_REVIEW" = "true" ]; then
+          echo "ProofMesh found review findings."
+          exit 1
+        fi
+
+    - name: Upload SARIF
+      if: ${{ always() && inputs.upload-sarif == 'true' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.sarif-file }}
