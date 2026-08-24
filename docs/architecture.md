@@ -51,14 +51,14 @@ A `Bundle` has an immutable `id`, `schemaVersion`, `run` metadata, and an ordere
 2. The parser validates required top-level fields and creates a normalized bundle.
 3. The canonicalizer sorts object keys and serializes data without timestamps generated during verification.
 4. The digest is computed over the normalized bundle.
-5. The graph builder resolves references and identifies missing targets, self-reference, and disconnected claims.
+5. The graph builder resolves references and identifies missing targets, self-reference, disconnected claims, and cyclic provenance paths.
 6. The rule engine evaluates evidence completeness and severity.
 7. The replayability classifier examines `replay.mode`, tool side effects, and recorded response metadata.
 8. The orchestrator aggregates findings and derives the overall verdict. The UI never infers a verdict independently.
 
 ## Error flow
 
-User data errors are represented as findings or a `parse_error` report, not uncaught exceptions. Fatal programmer errors are still thrown and caught by the React ErrorBoundary. Empty bundles show a directed action. Unknown fields are retained where safe but never treated as proof. A missing signature produces `review` or `block` according to the rule severity; it cannot silently pass.
+User data errors are represented as findings or a `parse_error` report, not uncaught exceptions. Missing references and provenance cycles are blocking findings because they prevent a directional evidence explanation. Fatal programmer errors are still thrown and caught by the React ErrorBoundary. Empty bundles show a directed action. Unknown fields are retained where safe but never treated as proof. A missing signature produces `review` or `block` according to the rule severity; it cannot silently pass.
 
 ## Security model
 

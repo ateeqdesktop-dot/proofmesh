@@ -80,6 +80,7 @@ export interface GraphSummary {
   leaves: number;
   missingRefs: string[];
   disconnected: string[];
+  cycles: string[][];
 }
 
 export interface VerificationReport {
