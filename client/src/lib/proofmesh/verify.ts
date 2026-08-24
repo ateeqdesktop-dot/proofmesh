@@ -3,6 +3,7 @@
  * hashes, and evaluates claims; it never fetches URLs or executes tool data.
  */
 import { sha256 } from "./canonical";
+import { declaredSignatureStatus } from "./signature";
 import type {
   Claim,
   EvidenceBundle,
@@ -22,8 +23,8 @@ const requiredKinds = new Set<Claim["kind"]>([
 ]);
 
 function findingSeverity(findings: Finding[]): FindingSeverity {
-  if (findings.some((finding) => finding.severity === "block")) return "block";
-  if (findings.some((finding) => finding.severity === "review")) return "review";
+  if (findings.some(finding => finding.severity === "block")) return "block";
+  if (findings.some(finding => finding.severity === "review")) return "review";
   return "pass";
 }
 
@@ -56,7 +57,7 @@ function normalizeBundle(input: unknown): EvidenceBundle | null {
 }
 
 function buildGraph(bundle: EvidenceBundle, findings: Finding[]): GraphSummary {
-  const ids = new Set(bundle.claims.map((claim) => claim.id));
+  const ids = new Set(bundle.claims.map(claim => claim.id));
   const referenced = new Set<string>();
   let edges = 0;
   const missingRefs: string[] = [];
@@ -88,11 +89,18 @@ function buildGraph(bundle: EvidenceBundle, findings: Finding[]): GraphSummary {
     }
   }
 
-  const roots = bundle.claims.filter((claim) => claim.refs.length === 0).length;
-  const leaves = bundle.claims.filter((claim) => !referenced.has(claim.id)).length;
+  const roots = bundle.claims.filter(claim => claim.refs.length === 0).length;
+  const leaves = bundle.claims.filter(
+    claim => !referenced.has(claim.id)
+  ).length;
   const disconnected = bundle.claims
-    .filter((claim) => claim.refs.length > 0 && !referenced.has(claim.id) && claim.kind !== "output")
-    .map((claim) => claim.id);
+    .filter(
+      claim =>
+        claim.refs.length > 0 &&
+        !referenced.has(claim.id) &&
+        claim.kind !== "output"
+    )
+    .map(claim => claim.id);
 
   if (disconnected.length > 0) {
     findings.push({
@@ -105,7 +113,10 @@ function buildGraph(bundle: EvidenceBundle, findings: Finding[]): GraphSummary {
   }
 
   const adjacency = new Map(
-    bundle.claims.map((claim) => [claim.id, claim.refs.filter((ref) => ids.has(ref))]),
+    bundle.claims.map(claim => [
+      claim.id,
+      claim.refs.filter(ref => ids.has(ref)),
+    ])
   );
   const state = new Map<string, "unvisited" | "active" | "done">();
   const stack: string[] = [];
@@ -156,16 +167,18 @@ function buildGraph(bundle: EvidenceBundle, findings: Finding[]): GraphSummary {
 }
 
 function replayMode(claim: Claim): ReplayMode {
-  const declared = claim.evidence.find((item) => item.replay?.mode)?.replay?.mode;
+  const declared = claim.evidence.find(item => item.replay?.mode)?.replay?.mode;
   if (declared) return declared;
-  if (claim.kind === "tool.effect" && claim.effect?.external) return "non-replayable";
-  if (claim.evidence.some((item) => item.source === "recorded-response")) return "recorded-only";
+  if (claim.kind === "tool.effect" && claim.effect?.external)
+    return "non-replayable";
+  if (claim.evidence.some(item => item.source === "recorded-response"))
+    return "recorded-only";
   return "unknown";
 }
 
 function evaluateRules(bundle: EvidenceBundle, findings: Finding[]): void {
-  const presentKinds = new Set(bundle.claims.map((claim) => claim.kind));
-  requiredKinds.forEach((kind) => {
+  const presentKinds = new Set(bundle.claims.map(claim => claim.kind));
+  requiredKinds.forEach(kind => {
     if (!presentKinds.has(kind)) {
       findings.push({
         ruleId: "completeness.required-kind",
@@ -183,7 +196,8 @@ function evaluateRules(bundle: EvidenceBundle, findings: Finding[]): void {
         ruleId: "evidence.missing",
         severity: claim.kind === "output" ? "block" : "review",
         title: "Claim has no attached evidence",
-        detail: "The claim is present, but the bundle does not explain where its proof came from.",
+        detail:
+          "The claim is present, but the bundle does not explain where its proof came from.",
         claimId: claim.id,
         path: `claims.${claim.id}.evidence`,
       });
@@ -202,24 +216,31 @@ function evaluateRules(bundle: EvidenceBundle, findings: Finding[]): void {
         ruleId: "replay.external-effect",
         severity: "review",
         title: "External effect cannot be replayed safely",
-        detail: "The effect is recorded for audit, but replay requires an explicit sandbox adapter.",
+        detail:
+          "The effect is recorded for audit, but replay requires an explicit sandbox adapter.",
         claimId: claim.id,
       });
     }
   }
 
-  if (bundle.envelope?.type !== "unsigned" && bundle.envelope?.verified !== true) {
+  if (
+    bundle.envelope?.type !== "unsigned" &&
+    bundle.envelope?.verified !== true
+  ) {
     findings.push({
       ruleId: "envelope.unverified",
       severity: "review",
       title: "Envelope is not cryptographically verified",
-      detail: "The bundle declares an envelope, but this browser MVP has not verified its signature.",
+      detail:
+        "The bundle declares an envelope, but this browser MVP has not verified its signature.",
       path: "envelope.verified",
     });
   }
 }
 
-export async function verifyBundle(input: unknown): Promise<VerificationResult> {
+export async function verifyBundle(
+  input: unknown
+): Promise<VerificationResult> {
   const bundle = normalizeBundle(input);
   if (!bundle) {
     const report: VerificationReport = {
@@ -227,26 +248,46 @@ export async function verifyBundle(input: unknown): Promise<VerificationResult> 
       bundleDigest: "",
       verdict: "block",
       checkedAt: new Date().toISOString(),
-      summary: { claims: 0, passed: 0, review: 0, blocked: 1, replayable: 0, recordedOnly: 0, nonReplayable: 0 },
-      graph: { nodes: 0, edges: 0, roots: 0, leaves: 0, missingRefs: [], disconnected: [], cycles: [] },
-      findings: [{
-        ruleId: "parser.invalid-bundle",
-        severity: "block",
-        title: "Bundle could not be parsed",
-        detail: "Expected schemaVersion, run metadata, and an array of claims with evidence fields.",
-      }],
+      summary: {
+        claims: 0,
+        passed: 0,
+        review: 0,
+        blocked: 1,
+        replayable: 0,
+        recordedOnly: 0,
+        nonReplayable: 0,
+      },
+      graph: {
+        nodes: 0,
+        edges: 0,
+        roots: 0,
+        leaves: 0,
+        missingRefs: [],
+        disconnected: [],
+        cycles: [],
+      },
+      findings: [
+        {
+          ruleId: "parser.invalid-bundle",
+          severity: "block",
+          title: "Bundle could not be parsed",
+          detail:
+            "Expected schemaVersion, run metadata, and an array of claims with evidence fields.",
+        },
+      ],
     };
     return { bundle: null, report };
   }
 
   const findings: Finding[] = [];
   const graph = buildGraph(bundle, findings);
+  const signatureStatus = declaredSignatureStatus(bundle);
   evaluateRules(bundle, findings);
   const digest = await sha256(bundle);
   const counts = {
-    pass: findings.filter((finding) => finding.severity === "pass").length,
-    review: findings.filter((finding) => finding.severity === "review").length,
-    block: findings.filter((finding) => finding.severity === "block").length,
+    pass: findings.filter(finding => finding.severity === "pass").length,
+    review: findings.filter(finding => finding.severity === "review").length,
+    block: findings.filter(finding => finding.severity === "block").length,
   };
   const replay = bundle.claims.map(replayMode);
   const report: VerificationReport = {
@@ -259,11 +300,12 @@ export async function verifyBundle(input: unknown): Promise<VerificationResult> 
       passed: counts.pass,
       review: counts.review,
       blocked: counts.block,
-      replayable: replay.filter((mode) => mode === "deterministic").length,
-      recordedOnly: replay.filter((mode) => mode === "recorded-only").length,
-      nonReplayable: replay.filter((mode) => mode === "non-replayable").length,
+      replayable: replay.filter(mode => mode === "deterministic").length,
+      recordedOnly: replay.filter(mode => mode === "recorded-only").length,
+      nonReplayable: replay.filter(mode => mode === "non-replayable").length,
     },
     graph,
+    signatureStatus,
     findings,
   };
   return { bundle, report };

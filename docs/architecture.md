@@ -27,19 +27,19 @@ Verification report ──► UI inspector / JSON export / Markdown export
 
 ## Components
 
-| Component | Responsibility | Boundary |
-|---|---|---|
-| `types.ts` | Domain types for bundles, claims, rules, findings, reports | No browser APIs |
-| `canonical.ts` | Stable key ordering and digest input | Pure deterministic functions |
-| `parser.ts` | Runtime shape guard and safe parsing | Never executes bundle content |
-| `graph.ts` | Reference validation and graph metrics | Produces findings, never throws for user data |
-| `rules.ts` | Completeness and severity rules | Rule IDs are stable API |
-| `replayability.ts` | Classifies replayability from evidence metadata | Conservative: unknown becomes review |
-| `verify.ts` | Orchestrates verification pipeline | Returns report for every input |
-| `fixtures.ts` | Valid and intentionally flawed demo bundles | No fake user reviews/testimonials |
-| `Home.tsx` | Product shell and dashboard | Presentation only |
-| `ClaimInspector.tsx` | Focused evidence drawer/rail | Presentation only |
-| `EvidenceGraph.tsx` | Visual graph of claims and edges | Accessible list fallback included |
+| Component            | Responsibility                                             | Boundary                                      |
+| -------------------- | ---------------------------------------------------------- | --------------------------------------------- |
+| `types.ts`           | Domain types for bundles, claims, rules, findings, reports | No browser APIs                               |
+| `canonical.ts`       | Stable key ordering and digest input                       | Pure deterministic functions                  |
+| `parser.ts`          | Runtime shape guard and safe parsing                       | Never executes bundle content                 |
+| `graph.ts`           | Reference validation and graph metrics                     | Produces findings, never throws for user data |
+| `rules.ts`           | Completeness and severity rules                            | Rule IDs are stable API                       |
+| `replayability.ts`   | Classifies replayability from evidence metadata            | Conservative: unknown becomes review          |
+| `verify.ts`          | Orchestrates verification pipeline                         | Returns report for every input                |
+| `fixtures.ts`        | Valid and intentionally flawed demo bundles                | No fake user reviews/testimonials             |
+| `Home.tsx`           | Product shell and dashboard                                | Presentation only                             |
+| `ClaimInspector.tsx` | Focused evidence drawer/rail                               | Presentation only                             |
+| `EvidenceGraph.tsx`  | Visual graph of claims and edges                           | Accessible list fallback included             |
 
 ## Domain model
 
@@ -86,13 +86,13 @@ New claim kinds implement a type guard and rule pack. New evidence sources imple
 
 ## Threats and mitigations
 
-| Threat | Mitigation |
-|---|---|
-| Bundle claims a signature without a valid signature | Show signature as unverified unless a cryptographic adapter validates it |
-| Malformed or huge JSON freezes UI | Bound input size in future file loader; use worker/streaming path for large files |
-| URL or prompt exfiltration | No network fetch and no execution in verifier |
-| Ambiguous replayability | Conservative `review` state with explicit reason |
-| Rule drift | Stable rule IDs, fixtures, changelog, and conformance tests |
+| Threat                                              | Mitigation                                                                        |
+| --------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Bundle claims a signature without a valid signature | Show signature as unverified unless a cryptographic adapter validates it          |
+| Malformed or huge JSON freezes UI                   | Bound input size in future file loader; use worker/streaming path for large files |
+| URL or prompt exfiltration                          | No network fetch and no execution in verifier                                     |
+| Ambiguous replayability                             | Conservative `review` state with explicit reason                                  |
+| Rule drift                                          | Stable rule IDs, fixtures, changelog, and conformance tests                       |
 
 ## Deployment model
 

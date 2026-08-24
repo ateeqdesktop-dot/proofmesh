@@ -14,17 +14,17 @@ The project deliberately sits beside existing standards and platforms. It consum
 
 ## What is implemented
 
-| Capability | MVP status |
-|---|---|
-| Versioned evidence bundle model | Implemented |
-| Deterministic canonical JSON and SHA-256 digest | Implemented in browser |
-| Claim graph and missing-reference detection | Implemented |
-| Evidence completeness rules | Implemented |
-| Replayability classification | Implemented conservatively |
-| Pass / review / block verdicts | Implemented |
-| Claim inspector and local report UI | Implemented |
-| JSON and Markdown report export | Implemented |
-| OTel adapter, DSSE cryptographic verification, CLI, GitHub Action | Roadmap |
+| Capability                                                        | MVP status                 |
+| ----------------------------------------------------------------- | -------------------------- |
+| Versioned evidence bundle model                                   | Implemented                |
+| Deterministic canonical JSON and SHA-256 digest                   | Implemented in browser     |
+| Claim graph and missing-reference detection                       | Implemented                |
+| Evidence completeness rules                                       | Implemented                |
+| Replayability classification                                      | Implemented conservatively |
+| Pass / review / block verdicts                                    | Implemented                |
+| Claim inspector and local report UI                               | Implemented                |
+| JSON and Markdown report export                                   | Implemented                |
+| OTel adapter, DSSE cryptographic verification, CLI, GitHub Action | Roadmap                    |
 
 ## Run locally
 
@@ -129,7 +129,7 @@ jobs:
         with:
           bundle: examples/passing-bundle.json
           sarif-file: proofmesh.sarif
-          fail-on-review: 'false'
+          fail-on-review: "false"
 ```
 
 To publish findings in GitHub code scanning, set `upload-sarif: 'true'` and grant `security-events: write` in the caller workflow. The permission is deliberately not granted by this repository's default CI; consumers own that security decision.

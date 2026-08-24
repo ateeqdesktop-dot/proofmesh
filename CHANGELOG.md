@@ -2,6 +2,13 @@
 
 All notable changes to ProofMesh are documented here.
 
+## [0.5.1] - 2026-08-24
+
+### Fixed
+
+- Rebased the cycle-detection release on the latest public repository history.
+- Kept the nested reusable GitHub Action contract and updated the CLI/package version consistently.
+
 ## [0.5.0] - 2026-08-23
 
 ### Added
