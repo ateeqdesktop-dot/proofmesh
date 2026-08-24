@@ -8,7 +8,7 @@ import { diffBundles } from "../client/src/lib/proofmesh/diff";
 import { verifyBundle } from "../client/src/lib/proofmesh/verify";
 import type { Finding, VerificationReport } from "../client/src/lib/proofmesh/types";
 
-const VERSION = "0.3.0";
+const VERSION = "0.5.0";
 
 type SarifResult = {
   ruleId: string;

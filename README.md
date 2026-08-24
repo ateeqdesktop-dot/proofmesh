@@ -18,7 +18,7 @@ The project deliberately sits beside existing standards and platforms. It consum
 | ---------------------------------------------------------------------- | -------------------------- |
 | Versioned evidence bundle model                                        | Implemented                |
 | Deterministic canonical JSON and SHA-256 digest                        | Implemented in browser     |
-| Claim graph and missing-reference detection                            | Implemented                |
+| Claim graph, missing-reference, and cycle detection                    | Implemented                |
 | Evidence completeness rules                                            | Implemented                |
 | Replayability classification                                           | Implemented conservatively |
 | Pass / review / block verdicts                                         | Implemented                |
@@ -58,7 +58,7 @@ A bundle contains run metadata and an ordered set of claims. Claims reference pr
 input → model.decision → policy.decision → tool.call → tool.effect → output
 ```
 
-The chain is illustrative rather than mandatory. Missing edges are findings, not hidden repairs. External effects can be recorded for audit, but ProofMesh will not call them or label them replayable without explicit evidence.
+The chain is illustrative rather than mandatory. Missing edges and cyclic provenance are findings, not hidden repairs; cycles are blocking because they prevent a directional evidence explanation. External effects can be recorded for audit, but ProofMesh will not call them or label them replayable without explicit evidence.
 
 ## Verification semantics
 

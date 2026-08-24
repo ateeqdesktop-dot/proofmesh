@@ -44,6 +44,23 @@ describe("ProofMesh verifier", () => {
     expect(report.changes).toEqual(expect.arrayContaining([expect.objectContaining({ path: "claims.output-01", kind: "changed" })]));
   });
 
+  it("blocks a cyclic provenance graph", async () => {
+    const cyclic = {
+      ...fixtureBundles.passing,
+      claims: fixtureBundles.passing.claims.map((claim) =>
+        claim.id === "input-01"
+          ? { ...claim, refs: ["output-01"] }
+          : claim.id === "output-01"
+            ? { ...claim, refs: ["input-01"] }
+            : claim,
+      ),
+    };
+    const { report } = await verifyBundle(cyclic);
+    expect(report.verdict).toBe("block");
+    expect(report.graph.cycles).toEqual([["input-01", "output-01", "input-01"]]);
+    expect(report.findings.some((finding) => finding.ruleId === "graph.cycle")).toBe(true);
+  });
+
   it("never treats malformed input as verified", async () => {
     const { bundle, report } = await verifyBundle({ id: "not-a-bundle" });
     expect(bundle).toBeNull();

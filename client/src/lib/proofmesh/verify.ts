@@ -105,6 +105,46 @@ function buildGraph(bundle: EvidenceBundle, findings: Finding[]): GraphSummary {
     });
   }
 
+  const adjacency = new Map(
+    bundle.claims.map((claim) => [claim.id, claim.refs.filter((ref) => ids.has(ref))]),
+  );
+  const state = new Map<string, "unvisited" | "active" | "done">();
+  const stack: string[] = [];
+  const cycles: string[][] = [];
+  const seenCycles = new Set<string>();
+
+  const visit = (id: string): void => {
+    const current = state.get(id) ?? "unvisited";
+    if (current === "active") {
+      const start = stack.indexOf(id);
+      const cycle = [...stack.slice(start), id];
+      const key = cycle.join("->");
+      if (!seenCycles.has(key)) {
+        seenCycles.add(key);
+        cycles.push(cycle);
+      }
+      return;
+    }
+    if (current === "done") return;
+    state.set(id, "active");
+    stack.push(id);
+    for (const ref of adjacency.get(id) ?? []) visit(ref);
+    stack.pop();
+    state.set(id, "done");
+  };
+
+  for (const claim of bundle.claims) visit(claim.id);
+  for (const cycle of cycles) {
+    findings.push({
+      ruleId: "graph.cycle",
+      severity: "block",
+      title: "Cyclic provenance detected",
+      detail: `Claims form a cycle: ${cycle.join(" → ")}.`,
+      claimId: cycle[0],
+      path: "claims",
+    });
+  }
+
   return {
     nodes: bundle.claims.length,
     edges,
@@ -112,6 +152,7 @@ function buildGraph(bundle: EvidenceBundle, findings: Finding[]): GraphSummary {
     leaves,
     missingRefs,
     disconnected,
+    cycles,
   };
 }
 
@@ -188,7 +229,7 @@ export async function verifyBundle(input: unknown): Promise<VerificationResult> 
       verdict: "block",
       checkedAt: new Date().toISOString(),
       summary: { claims: 0, passed: 0, review: 0, blocked: 1, replayable: 0, recordedOnly: 0, nonReplayable: 0 },
-      graph: { nodes: 0, edges: 0, roots: 0, leaves: 0, missingRefs: [], disconnected: [] },
+      graph: { nodes: 0, edges: 0, roots: 0, leaves: 0, missingRefs: [], disconnected: [], cycles: [] },
       findings: [{
         ruleId: "parser.invalid-bundle",
         severity: "block",
