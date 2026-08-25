@@ -14,17 +14,17 @@ The project deliberately sits beside existing standards and platforms. It consum
 
 ## What is implemented
 
-| Capability                                                        | MVP status                 |
-| ----------------------------------------------------------------- | -------------------------- |
-| Versioned evidence bundle model                                   | Implemented                |
-| Deterministic canonical JSON and SHA-256 digest                   | Implemented in browser     |
-| Claim graph and missing-reference detection                       | Implemented                |
-| Evidence completeness rules                                       | Implemented                |
-| Replayability classification                                      | Implemented conservatively |
-| Pass / review / block verdicts                                    | Implemented                |
-| Claim inspector and local report UI                               | Implemented                |
-| JSON and Markdown report export                                   | Implemented                |
-| OTel adapter, DSSE cryptographic verification, CLI, GitHub Action | Roadmap                    |
+| Capability                                                | MVP status                 |
+| --------------------------------------------------------- | -------------------------- |
+| Versioned evidence bundle model                           | Implemented                |
+| Deterministic canonical JSON and SHA-256 digest           | Implemented in browser     |
+| Claim graph, missing references, and cycle detection      | Implemented                |
+| Evidence completeness rules                               | Implemented                |
+| Replayability classification                              | Implemented conservatively |
+| Pass / review / block verdicts                            | Implemented                |
+| Claim inspector and local report UI                       | Implemented                |
+| JSON and Markdown report export                           | Implemented                |
+| OTel-style adapter, passive CLI, SARIF, and GitHub Action | Implemented                |
 
 ## Run locally
 
@@ -53,7 +53,7 @@ A bundle contains run metadata and an ordered set of claims. Claims reference pr
 input → model.decision → policy.decision → tool.call → tool.effect → output
 ```
 
-The chain is illustrative rather than mandatory. Missing edges are findings, not hidden repairs. External effects can be recorded for audit, but ProofMesh will not call them or label them replayable without explicit evidence.
+The chain is illustrative rather than mandatory. Missing edges and cyclic provenance are findings, not hidden repairs; cycles are blocking because they prevent a directional evidence explanation. External effects can be recorded for audit, but ProofMesh will not call them or label them replayable without explicit evidence.
 
 ## Verification semantics
 
@@ -70,21 +70,24 @@ client/src/lib/proofmesh/
 ├── types.ts       # domain vocabulary
 ├── canonical.ts   # stable serialization and SHA-256
 ├── verify.ts      # parser, graph checks, rules, report orchestration
+├── otel.ts        # dependency-free OTel-style span adapter
+├── diff.ts        # deterministic claim-level comparison
+├── signature.ts   # explicit signature trust-state helpers
 ├── fixtures.ts    # valid and intentionally incomplete examples
-└── verify.test.ts # deterministic domain tests
+└── *.test.ts      # deterministic domain and adapter tests
 ```
 
 See [`docs/product-spec.md`](docs/product-spec.md) for product boundaries and [`docs/architecture.md`](docs/architecture.md) for data flow, threats, performance, and extension points.
 
 ## Security posture
 
-ProofMesh is intentionally passive in the MVP. It does not execute commands, invoke models, fetch network resources, load plugins, or infer cryptographic trust from a string label. A future DSSE adapter must accept explicit trust roots and expose verification state separately from the bundle's claims.
+ProofMesh is intentionally passive. It does not execute commands, invoke models, fetch network resources, load plugins, or infer cryptographic trust from a string label. Signature helpers expose trust state separately from bundle claims and require explicit verification roots; imported OTel-style spans remain observed data until the normal rules establish a verdict.
 
 Do not upload secrets, production prompts, customer data, or private evidence to a public issue. See [`SECURITY.md`](SECURITY.md) for reporting guidance.
 
 ## Roadmap
 
-The next version will add an OTel GenAI adapter, DSSE/in-toto envelope parsing, a standalone CLI, and a GitHub Action that emits a machine-readable report. Later versions may add conformance fixture packs, differential verification, MCP evidence adapters, and sandbox-aware replay harnesses. A hosted multi-tenant dashboard is intentionally not the next step; portability and independent verification are the product boundary.
+The next versions will add conformance fixture packs, richer DSSE/in-toto verification, MCP evidence adapters, and sandbox-aware replay harnesses. A hosted multi-tenant dashboard is intentionally not the next step; portability and independent verification are the product boundary.
 
 ## Contributing
 

@@ -2,6 +2,13 @@
 
 All notable changes to ProofMesh are documented here.
 
+## [0.6.2] - 2026-08-25
+
+### Fixed
+
+- Corrected README capability and roadmap claims to match the shipped OTel adapter, passive CLI, SARIF, policy profiles, and reusable Action.
+- Documented cycle detection, differential verification, and explicit signature trust-state helpers in the public architecture overview.
+
 ## [0.6.1] - 2026-08-25
 
 ### Fixed

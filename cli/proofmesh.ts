@@ -11,7 +11,7 @@ import type {
   VerificationReport,
 } from "../client/src/lib/proofmesh/types";
 
-const VERSION = "0.6.1";
+const VERSION = "0.6.2";
 
 type SarifResult = {
   ruleId: string;
