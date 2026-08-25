@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm check
+
+      - name: Domain tests
+        run: pnpm test
+
+      - name: Production build
+        run: pnpm build
+
+      - name: Reusable action verification
+        uses: ./.github/actions/verify
+        with:
+          project-dir: .
+          bundle: examples/passing-bundle.json
+          sarif-file: proofmesh.sarif
+          dsse-envelope: examples/passing-bundle.dsse.json
+          public-key: examples/attestation.public.pem
+          upload-sarif: 'false'
+          fail-on-review: 'false'
+
+      - name: Upload SARIF fixture
+        uses: actions/upload-artifact@v4
+        with:
+          name: proofmesh-sarif
+          path: proofmesh.sarif
+
+      - name: Strict policy regression
+        shell: bash
+        run: |
+          set +e
+          pnpm --silent proofmesh verify examples/passing-bundle.json --policy policies/payments-strict.json > strict-report.json
+          code=$?
+          set -e
+          test "$code" -eq 1
+          grep -q '"policyId": "payments-strict-v1"' strict-report.json
+          grep -q '"verdict": "block"' strict-report.json

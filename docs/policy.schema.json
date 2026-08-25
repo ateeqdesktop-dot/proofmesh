@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ateeqdesktop-dot/proofmesh/blob/main/docs/policy.schema.json",
+  "title": "ProofMesh Verification Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "requiredKinds", "requireVerifiedEnvelope", "externalEffectSeverity", "unknownReplaySeverity"],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "requiredKinds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"enum": ["input", "model.decision", "tool.call", "tool.effect", "policy.decision", "output"]}
+    },
+    "requireVerifiedEnvelope": {"type": "boolean"},
+    "externalEffectSeverity": {"enum": ["pass", "review", "block"]},
+    "unknownReplaySeverity": {"enum": ["pass", "review", "block"]}
+  }
+}
