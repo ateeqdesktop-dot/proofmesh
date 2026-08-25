@@ -8,7 +8,7 @@ import { parsePolicy } from "../client/src/lib/proofmesh/policy";
 import { verifyBundle } from "../client/src/lib/proofmesh/verify";
 import type { Finding, VerificationReport } from "../client/src/lib/proofmesh/types";
 
-const VERSION = "0.2.0";
+const VERSION = "0.6.0";
 
 type SarifResult = {
   ruleId: string;

@@ -94,6 +94,21 @@ Contributions are welcome when they preserve the protocol-first boundary. New ru
 
 MIT. See [`LICENSE`](LICENSE).
 
+## OTel interoperability
+
+ProofMesh includes a dependency-free adapter for OTel-style span records. `spansToEvidenceBundle()` orders spans deterministically, maps `gen_ai.operation.name` and explicit `proofmesh.claim.kind` attributes into claim kinds, preserves parent-child provenance, and carries replay metadata into the normal verifier. It accepts plain serializable objects rather than an OpenTelemetry SDK instance, so ingestion remains passive and easy to test.
+
+```ts
+import { spansToEvidenceBundle } from "./client/src/lib/proofmesh/otel";
+
+const bundle = spansToEvidenceBundle(spans, {
+  provider: "my-agent",
+  policyProfile: "strict",
+});
+```
+
+The adapter does not fetch spans, call a collector, execute tool payloads, or infer cryptographic trust. It is a translation boundary; all verdicts still come from the same claim graph and rule engine.
+
 ## CLI verification
 
 ProofMesh can verify the same bundle engine used by the browser from a terminal or CI job. The command is intentionally passive: it reads JSON, computes a deterministic digest, evaluates claim and graph rules, and never executes commands, fetches URLs, or invokes a model.

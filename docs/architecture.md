@@ -36,6 +36,7 @@ Verification report ──► UI inspector / JSON export / Markdown export
 | `rules.ts` | Completeness and severity rules | Rule IDs are stable API |
 | `replayability.ts` | Classifies replayability from evidence metadata | Conservative: unknown becomes review |
 | `verify.ts` | Orchestrates verification pipeline | Returns report for every input |
+| `otel.ts` | Maps serializable OTel-style spans into bundles | No SDK, collector, or network dependency |
 | `fixtures.ts` | Valid and intentionally flawed demo bundles | No fake user reviews/testimonials |
 | `Home.tsx` | Product shell and dashboard | Presentation only |
 | `ClaimInspector.tsx` | Focused evidence drawer/rail | Presentation only |
