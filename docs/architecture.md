@@ -36,6 +36,7 @@ Verification report ──► UI inspector / JSON export / Markdown export
 | `rules.ts`           | Completeness and severity rules                            | Rule IDs are stable API                       |
 | `replayability.ts`   | Classifies replayability from evidence metadata            | Conservative: unknown becomes review          |
 | `verify.ts`          | Orchestrates verification pipeline                         | Returns report for every input                |
+| `otel.ts`            | Maps serializable OTel-style spans into bundles            | No SDK, collector, or network dependency      |
 | `fixtures.ts`        | Valid and intentionally flawed demo bundles                | No fake user reviews/testimonials             |
 | `Home.tsx`           | Product shell and dashboard                                | Presentation only                             |
 | `ClaimInspector.tsx` | Focused evidence drawer/rail                               | Presentation only                             |
@@ -55,6 +56,7 @@ A `Bundle` has an immutable `id`, `schemaVersion`, `run` metadata, and an ordere
 6. The rule engine evaluates evidence completeness and severity.
 7. The replayability classifier examines `replay.mode`, tool side effects, and recorded response metadata.
 8. The orchestrator aggregates findings and derives the overall verdict. The UI never infers a verdict independently.
+9. The optional OTel adapter translates already-available span objects into the same bundle contract; it does not collect, fetch, or verify their origin.
 
 ## Error flow
 
@@ -82,7 +84,8 @@ The domain is horizontally scalable because verification is stateless. A future 
 
 ## Extensibility strategy
 
-New claim kinds implement a type guard and rule pack. New evidence sources implement an adapter that maps external spans or attestations into the normalized claim model. New report formats consume `VerificationReport`; they do not rerun rules. Protocol evolution uses semver and fixture-based conformance tests.
+New claim kinds implement a type guard and rule pack. New evidence sources implement an adapter that maps external spans or attestations into the normalized claim model. The OTel adapter is intentionally SDK-free and treats all imported spans as observed evidence until normal rules establish a verdict.
+New report formats consume `VerificationReport`; they do not rerun rules. Protocol evolution uses semver and fixture-based conformance tests.
 
 ## Threats and mitigations
 

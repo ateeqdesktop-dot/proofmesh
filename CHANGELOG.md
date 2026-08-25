@@ -2,6 +2,14 @@
 
 All notable changes to ProofMesh are documented here.
 
+## [0.6.0] - 2026-08-24
+
+### Added
+
+- Added a dependency-free OTel-style span adapter that produces deterministic EvidenceBundles.
+- Preserved parent-child provenance, explicit claim-kind attributes, replay metadata, and external-effect metadata during import.
+- Added adapter tests covering complete traces, ordering, missing SDK dependencies, and empty-input rejection.
+
 ## [0.5.1] - 2026-08-24
 
 ### Fixed
