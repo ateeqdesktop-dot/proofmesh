@@ -6,19 +6,26 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parsePolicy } from "../client/src/lib/proofmesh/policy";
 import { verifyBundle } from "../client/src/lib/proofmesh/verify";
-import type { Finding, VerificationReport } from "../client/src/lib/proofmesh/types";
+import type {
+  Finding,
+  VerificationReport,
+} from "../client/src/lib/proofmesh/types";
 
-const VERSION = "0.6.0";
+const VERSION = "0.6.1";
 
 type SarifResult = {
   ruleId: string;
   level: "error" | "warning" | "note";
   message: { text: string };
-  locations?: Array<{ physicalLocation: { artifactLocation: { uri: string } } }>;
+  locations?: Array<{
+    physicalLocation: { artifactLocation: { uri: string } };
+  }>;
 };
 
 function usage(): never {
-  console.error(`ProofMesh ${VERSION}\n\nUsage:\n  pnpm proofmesh verify <bundle.json> [--policy policy.json] [--format json|sarif] [--output report.json]\n\nExit codes:\n  0  pass\n  1  review findings\n  2  blocked or invalid bundle\n`);
+  console.error(
+    `ProofMesh ${VERSION}\n\nUsage:\n  pnpm proofmesh verify <bundle.json> [--policy policy.json] [--format json|sarif] [--output report.json]\n\nExit codes:\n  0  pass\n  1  review findings\n  2  blocked or invalid bundle\n`
+  );
   process.exit(2);
 }
 
@@ -29,32 +36,43 @@ function levelFor(finding: Finding): SarifResult["level"] {
 }
 
 function toSarif(report: VerificationReport, source: string) {
-  const rules = Array.from(new Set(report.findings.map((finding) => finding.ruleId))).map((id) => ({
+  const rules = Array.from(
+    new Set(report.findings.map(finding => finding.ruleId))
+  ).map(id => ({
     id,
     shortDescription: { text: id },
   }));
-  const results: SarifResult[] = report.findings.map((finding) => ({
+  const results: SarifResult[] = report.findings.map(finding => ({
     ruleId: finding.ruleId,
     level: levelFor(finding),
     message: { text: `${finding.title}: ${finding.detail}` },
-    locations: [{ physicalLocation: { artifactLocation: { uri: finding.path ?? source } } }],
+    locations: [
+      {
+        physicalLocation: { artifactLocation: { uri: finding.path ?? source } },
+      },
+    ],
   }));
   return {
     version: "2.1.0",
     $schema: "https://json.schemastore.org/sarif-2.1.0.json",
-    runs: [{
-      tool: {
-        driver: {
-          name: "ProofMesh",
-          version: VERSION,
-          informationUri: "https://github.com/ateeqdesktop-dot/proofmesh",
-          rules,
+    runs: [
+      {
+        tool: {
+          driver: {
+            name: "ProofMesh",
+            version: VERSION,
+            informationUri: "https://github.com/ateeqdesktop-dot/proofmesh",
+            rules,
+          },
         },
+        automationDetails: { id: `proofmesh/${report.bundleId}` },
+        properties: {
+          bundleDigest: report.bundleDigest,
+          verdict: report.verdict,
+        },
+        results,
       },
-      automationDetails: { id: `proofmesh/${report.bundleId}` },
-      properties: { bundleDigest: report.bundleDigest, verdict: report.verdict },
-      results,
-    }],
+    ],
   };
 }
 
@@ -75,21 +93,29 @@ async function main() {
   try {
     input = JSON.parse(await readFile(source, "utf8"));
   } catch (error) {
-    console.error(`ProofMesh: unable to read JSON bundle: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `ProofMesh: unable to read JSON bundle: ${error instanceof Error ? error.message : String(error)}`
+    );
     process.exit(2);
   }
 
   let policy: Awaited<ReturnType<typeof parsePolicy>> = null;
   if (policyPath) {
     try {
-      const policyInput = JSON.parse(await readFile(resolve(policyPath), "utf8"));
+      const policyInput = JSON.parse(
+        await readFile(resolve(policyPath), "utf8")
+      );
       policy = parsePolicy(policyInput);
     } catch (error) {
-      console.error(`ProofMesh: unable to read policy: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(
+        `ProofMesh: unable to read policy: ${error instanceof Error ? error.message : String(error)}`
+      );
       process.exit(2);
     }
     if (!policy) {
-      console.error("ProofMesh: policy is invalid; expected a constrained JSON policy profile.");
+      console.error(
+        "ProofMesh: policy is invalid; expected a constrained JSON policy profile."
+      );
       process.exit(2);
     }
   }
@@ -100,10 +126,12 @@ async function main() {
   if (output) await writeFile(resolve(output), serialized, "utf8");
   else process.stdout.write(serialized);
 
-  process.exit(report.verdict === "block" ? 2 : report.verdict === "review" ? 1 : 0);
+  process.exit(
+    report.verdict === "block" ? 2 : report.verdict === "review" ? 1 : 0
+  );
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error(error);
   process.exit(2);
 });

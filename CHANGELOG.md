@@ -2,6 +2,13 @@
 
 All notable changes to ProofMesh are documented here.
 
+## [0.6.1] - 2026-08-25
+
+### Fixed
+
+- Rebased the OTel interoperability release on the latest public policy-verification history without force-pushing.
+- Preserved the nested reusable Action, policy profiles, SARIF behavior, and passive verifier boundary.
+
 ## [0.6.0] - 2026-08-24
 
 ### Added
