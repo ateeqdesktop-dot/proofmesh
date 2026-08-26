@@ -14,17 +14,17 @@ The project deliberately sits beside existing standards and platforms. It consum
 
 ## What is implemented
 
-| Capability | MVP status |
-|---|---|
-| Versioned evidence bundle model | Implemented |
-| Deterministic canonical JSON and SHA-256 digest | Implemented in browser |
-| Claim graph and missing-reference detection | Implemented |
-| Evidence completeness rules | Implemented |
-| Replayability classification | Implemented conservatively |
-| Pass / review / block verdicts | Implemented |
-| Claim inspector and local report UI | Implemented |
-| JSON and Markdown report export | Implemented |
-| OTel adapter, DSSE cryptographic verification, CLI, GitHub Action | Roadmap |
+| Capability                                                       | MVP status                 |
+| ---------------------------------------------------------------- | -------------------------- |
+| Versioned evidence bundle model                                  | Implemented                |
+| Deterministic canonical JSON and SHA-256 digest                  | Implemented in browser     |
+| Claim graph, missing references, and cycle detection             | Implemented                |
+| Evidence completeness rules                                      | Implemented                |
+| Replayability classification                                     | Implemented conservatively |
+| Pass / review / block verdicts                                   | Implemented                |
+| Claim inspector and local report UI                              | Implemented                |
+| JSON and Markdown report export                                  | Implemented                |
+| OTel-style adapter, DSSE verification, CLI, SARIF, GitHub Action | Implemented                |
 
 ## Run locally
 
@@ -53,7 +53,7 @@ A bundle contains run metadata and an ordered set of claims. Claims reference pr
 input → model.decision → policy.decision → tool.call → tool.effect → output
 ```
 
-The chain is illustrative rather than mandatory. Missing edges are findings, not hidden repairs. External effects can be recorded for audit, but ProofMesh will not call them or label them replayable without explicit evidence.
+The chain is illustrative rather than mandatory. Missing edges and cyclic provenance are findings, not hidden repairs; cycles are blocking because they prevent a directional evidence explanation. External effects can be recorded for audit, but ProofMesh will not call them or label them replayable without explicit evidence.
 
 ## Verification semantics
 
@@ -70,21 +70,24 @@ client/src/lib/proofmesh/
 ├── types.ts       # domain vocabulary
 ├── canonical.ts   # stable serialization and SHA-256
 ├── verify.ts      # parser, graph checks, rules, report orchestration
+├── otel.ts        # dependency-free OTel-style span adapter
+├── dsse.ts        # explicit DSSE verification boundary
+├── policy.ts      # constrained policy profiles
 ├── fixtures.ts    # valid and intentionally incomplete examples
-└── verify.test.ts # deterministic domain tests
+└── *.test.ts      # deterministic domain tests
 ```
 
 See [`docs/product-spec.md`](docs/product-spec.md) for product boundaries and [`docs/architecture.md`](docs/architecture.md) for data flow, threats, performance, and extension points.
 
 ## Security posture
 
-ProofMesh is intentionally passive in the MVP. It does not execute commands, invoke models, fetch network resources, load plugins, or infer cryptographic trust from a string label. A future DSSE adapter must accept explicit trust roots and expose verification state separately from the bundle's claims.
+ProofMesh is intentionally passive. It does not execute commands, invoke models, fetch network resources, load plugins, or infer cryptographic trust from a string label. DSSE verification accepts explicit public keys and exposes verification state separately from bundle claims; imported OTel-style spans remain observed data until normal rules establish a verdict.
 
 Do not upload secrets, production prompts, customer data, or private evidence to a public issue. See [`SECURITY.md`](SECURITY.md) for reporting guidance.
 
 ## Roadmap
 
-The next version will add an OTel GenAI adapter, DSSE/in-toto envelope parsing, a standalone CLI, and a GitHub Action that emits a machine-readable report. Later versions may add conformance fixture packs, differential verification, MCP evidence adapters, and sandbox-aware replay harnesses. A hosted multi-tenant dashboard is intentionally not the next step; portability and independent verification are the product boundary.
+The next versions will add conformance fixture packs, richer in-toto interoperability, MCP evidence adapters, and sandbox-aware replay harnesses. A hosted multi-tenant dashboard is intentionally not the next step; portability and independent verification are the product boundary.
 
 ## Contributing
 
@@ -93,6 +96,21 @@ Contributions are welcome when they preserve the protocol-first boundary. New ru
 ## License
 
 MIT. See [`LICENSE`](LICENSE).
+
+## OTel interoperability
+
+ProofMesh includes a dependency-free adapter for OTel-style span records. `spansToEvidenceBundle()` orders spans deterministically, maps `gen_ai.operation.name` and explicit `proofmesh.claim.kind` attributes into claim kinds, preserves parent-child provenance, and carries replay metadata into the normal verifier. It accepts plain serializable objects instead of an OpenTelemetry SDK instance, so ingestion remains passive and easy to test.
+
+```ts
+import { spansToEvidenceBundle } from "./client/src/lib/proofmesh/otel";
+
+const bundle = spansToEvidenceBundle(spans, {
+  provider: "my-agent",
+  policyProfile: "strict",
+});
+```
+
+The adapter does not fetch spans, call a collector, execute tool payloads, or infer cryptographic trust. It is a translation boundary; all verdicts still come from the same claim graph and policy engine.
 
 ## CLI verification
 
@@ -129,7 +147,7 @@ jobs:
         with:
           bundle: examples/passing-bundle.json
           sarif-file: proofmesh.sarif
-          fail-on-review: 'false'
+          fail-on-review: "false"
 ```
 
 To publish findings in GitHub code scanning, set `upload-sarif: 'true'` and grant `security-events: write` in the caller workflow. The permission is deliberately not granted by this repository's default CI; consumers own that security decision.

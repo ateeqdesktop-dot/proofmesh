@@ -27,15 +27,17 @@ Verification report ──► UI inspector / JSON export / Markdown export
 
 ## Components
 
-| Component | Responsibility | Boundary |
-|---|---|---|
-| `types.ts` | Domain types for bundles, claims, rules, findings, reports | No browser APIs |
-| `canonical.ts` | Stable key ordering and digest input | Pure deterministic functions |
-| `parser.ts` | Runtime shape guard and safe parsing | Never executes bundle content |
-| `graph.ts` | Reference validation and graph metrics | Produces findings, never throws for user data |
-| `rules.ts` | Completeness and severity rules | Rule IDs are stable API |
-| `replayability.ts` | Classifies replayability from evidence metadata | Conservative: unknown becomes review |
-| `verify.ts` | Orchestrates verification pipeline | Returns report for every input |
+| Component          | Responsibility                                             | Boundary                                      |
+| ------------------ | ---------------------------------------------------------- | --------------------------------------------- |
+| `types.ts`         | Domain types for bundles, claims, rules, findings, reports | No browser APIs                               |
+| `canonical.ts`     | Stable key ordering and digest input                       | Pure deterministic functions                  |
+| `parser.ts`        | Runtime shape guard and safe parsing                       | Never executes bundle content                 |
+| `graph.ts`         | Reference validation and graph metrics                     | Produces findings, never throws for user data |
+| `rules.ts`         | Completeness and severity rules                            | Rule IDs are stable API                       |
+| `replayability.ts` | Classifies replayability from evidence metadata            | Conservative: unknown becomes review          |
+| `verify.ts`        | Orchestrates verification pipeline                         | Returns report for every input                |
+| `otel.ts`          | Maps serializable OTel-style spans into bundles            | No SDK, collector, or network dependency      |
+
 | `fixtures.ts` | Valid and intentionally flawed demo bundles | No fake user reviews/testimonials |
 | `Home.tsx` | Product shell and dashboard | Presentation only |
 | `ClaimInspector.tsx` | Focused evidence drawer/rail | Presentation only |
@@ -55,6 +57,7 @@ A `Bundle` has an immutable `id`, `schemaVersion`, `run` metadata, and an ordere
 6. The rule engine evaluates evidence completeness and severity.
 7. The replayability classifier examines `replay.mode`, tool side effects, and recorded response metadata.
 8. The orchestrator aggregates findings and derives the overall verdict. The UI never infers a verdict independently.
+9. The optional OTel adapter translates already-available span objects into the same bundle contract; it does not collect, fetch, or verify their origin.
 
 ## Error flow
 
@@ -82,17 +85,18 @@ The domain is horizontally scalable because verification is stateless. A future 
 
 ## Extensibility strategy
 
-New claim kinds implement a type guard and rule pack. New evidence sources implement an adapter that maps external spans or attestations into the normalized claim model. New report formats consume `VerificationReport`; they do not rerun rules. Protocol evolution uses semver and fixture-based conformance tests.
+New claim kinds implement a type guard and rule pack. New evidence sources implement an adapter that maps external spans or attestations into the normalized claim model. The OTel adapter is intentionally SDK-free and treats imported spans as observed evidence until normal rules establish a verdict.
+New report formats consume `VerificationReport`; they do not rerun rules. Protocol evolution uses semver and fixture-based conformance tests.
 
 ## Threats and mitigations
 
-| Threat | Mitigation |
-|---|---|
-| Bundle claims a signature without a valid signature | Show signature as unverified unless a cryptographic adapter validates it |
-| Malformed or huge JSON freezes UI | Bound input size in future file loader; use worker/streaming path for large files |
-| URL or prompt exfiltration | No network fetch and no execution in verifier |
-| Ambiguous replayability | Conservative `review` state with explicit reason |
-| Rule drift | Stable rule IDs, fixtures, changelog, and conformance tests |
+| Threat                                              | Mitigation                                                                        |
+| --------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Bundle claims a signature without a valid signature | Show signature as unverified unless a cryptographic adapter validates it          |
+| Malformed or huge JSON freezes UI                   | Bound input size in future file loader; use worker/streaming path for large files |
+| URL or prompt exfiltration                          | No network fetch and no execution in verifier                                     |
+| Ambiguous replayability                             | Conservative `review` state with explicit reason                                  |
+| Rule drift                                          | Stable rule IDs, fixtures, changelog, and conformance tests                       |
 
 ## Deployment model
 
