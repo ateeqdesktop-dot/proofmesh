@@ -59,6 +59,14 @@ jobs:
           name: proofmesh-sarif
           path: proofmesh.sarif
 
+      - name: MCP adapter regression
+        shell: bash
+        run: |
+          pnpm --silent proofmesh adapt-mcp examples/mcp-capture.json --trace-id ci-fixture --provider ci --output mcp.bundle.json
+          pnpm --silent proofmesh verify mcp.bundle.json --output mcp.report.json
+          grep -q '"verdict": "pass"' mcp.report.json
+          grep -q '"claims": 6' mcp.report.json
+
       - name: Strict policy regression
         shell: bash
         run: |

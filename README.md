@@ -71,6 +71,7 @@ client/src/lib/proofmesh/
 ├── canonical.ts   # stable serialization and SHA-256
 ├── verify.ts      # parser, graph checks, rules, report orchestration
 ├── otel.ts        # dependency-free OTel-style span adapter
+├── mcp.ts         # passive MCP JSON-RPC evidence adapter
 ├── dsse.ts        # explicit DSSE verification boundary
 ├── policy.ts      # constrained policy profiles
 ├── fixtures.ts    # valid and intentionally incomplete examples
@@ -87,7 +88,7 @@ Do not upload secrets, production prompts, customer data, or private evidence to
 
 ## Roadmap
 
-The next versions will add conformance fixture packs, richer in-toto interoperability, MCP evidence adapters, and sandbox-aware replay harnesses. A hosted multi-tenant dashboard is intentionally not the next step; portability and independent verification are the product boundary.
+Future versions will add conformance fixture packs, richer in-toto interoperability, and sandbox-aware replay harnesses. A hosted multi-tenant dashboard is intentionally not the next step; portability and independent verification are the product boundary.
 
 ## Contributing
 
@@ -111,6 +112,21 @@ const bundle = spansToEvidenceBundle(spans, {
 ```
 
 The adapter does not fetch spans, call a collector, execute tool payloads, or infer cryptographic trust. It is a translation boundary; all verdicts still come from the same claim graph and policy engine.
+
+## MCP Evidence Boundary
+
+ProofMesh 0.8 adds a passive adapter for **already-captured MCP JSON-RPC records**. It converts `tools/call` messages into `tool.call` and `tool.effect` claims while keeping tool arguments and result content out of the generated bundle by default. The adapter never connects to an MCP server, executes a tool, or forwards capture data to a third party.
+
+```bash
+pnpm proofmesh adapt-mcp examples/mcp-capture.json \
+  --trace-id checkout-demo \
+  --provider local-fixture \
+  --output /tmp/checkout.bundle.json
+
+pnpm proofmesh verify /tmp/checkout.bundle.json
+```
+
+See [`docs/mcp-evidence-boundary.md`](docs/mcp-evidence-boundary.md) for the threat model, programmatic API, and explicit non-goals. This is an evidence translation boundary, not an MCP proxy, runtime guardrail, or complete prompt-injection detector.
 
 ## CLI verification
 

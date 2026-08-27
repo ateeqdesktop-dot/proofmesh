@@ -8,12 +8,13 @@ import { canonicalJson } from "../client/src/lib/proofmesh/canonical";
 import { parseDsse, verifyDsse } from "./dsse";
 import { parsePolicy } from "../client/src/lib/proofmesh/policy";
 import { verifyBundle } from "../client/src/lib/proofmesh/verify";
+import { recordsToEvidenceBundle } from "../client/src/lib/proofmesh/mcp";
 import type {
   Finding,
   VerificationReport,
 } from "../client/src/lib/proofmesh/types";
 
-const VERSION = "0.7.0";
+const VERSION = "0.8.0";
 
 type SarifResult = {
   ruleId: string;
@@ -26,7 +27,7 @@ type SarifResult = {
 
 function usage(): never {
   console.error(
-    `ProofMesh ${VERSION}\n\nUsage:\n  pnpm proofmesh verify <bundle.json> [--policy policy.json] [--dsse-envelope envelope.json --public-key key.pem] [--format json|sarif] [--output report.json]\n\nExit codes:\n  0  pass\n  1  review findings\n  2  blocked or invalid bundle\n`
+    `ProofMesh ${VERSION}\n\nUsage:\n  pnpm proofmesh adapt-mcp <capture.json> [--trace-id id] [--provider name] [--output bundle.json]\n  pnpm proofmesh verify <bundle.json> [--policy policy.json] [--dsse-envelope envelope.json --public-key key.pem] [--format json|sarif] [--output report.json]\n\nExit codes:\n  0  pass\n  1  review findings\n  2  blocked or invalid bundle\n`
   );
   process.exit(2);
 }
@@ -80,6 +81,31 @@ function toSarif(report: VerificationReport, source: string) {
 
 async function main() {
   const args = process.argv.slice(2);
+  if (args[0] === "adapt-mcp" && args[1]) {
+    const source = resolve(args[1]);
+    try {
+      const parsed = JSON.parse(await readFile(source, "utf8"));
+      if (!Array.isArray(parsed))
+        throw new Error("capture must be a JSON array of JSON-RPC records");
+      const traceIndex = args.indexOf("--trace-id");
+      const providerIndex = args.indexOf("--provider");
+      const outputIndex = args.indexOf("--output");
+      const bundle = recordsToEvidenceBundle(parsed, {
+        traceId: traceIndex >= 0 ? args[traceIndex + 1] : undefined,
+        provider: providerIndex >= 0 ? args[providerIndex + 1] : undefined,
+      });
+      const serialized = JSON.stringify(bundle, null, 2) + "\n";
+      if (outputIndex >= 0 && args[outputIndex + 1])
+        await writeFile(resolve(args[outputIndex + 1]), serialized, "utf8");
+      else process.stdout.write(serialized);
+      process.exit(0);
+    } catch (error) {
+      console.error(
+        `ProofMesh: unable to adapt MCP capture: ${error instanceof Error ? error.message : String(error)}`
+      );
+      process.exit(2);
+    }
+  }
   if (args[0] !== "verify" || !args[1]) usage();
 
   const source = resolve(args[1]);
