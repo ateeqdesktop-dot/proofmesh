@@ -1,0 +1,13 @@
+{
+  "$schema": "../docs/policy.schema.json",
+  "id": "payments-strict-v1",
+  "requiredKinds": [
+    "input",
+    "model.decision",
+    "policy.decision",
+    "output"
+  ],
+  "requireVerifiedEnvelope": true,
+  "externalEffectSeverity": "block",
+  "unknownReplaySeverity": "review"
+}
